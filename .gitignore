@@ -1,0 +1,17 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Data
+data/
+
+# Models
+models/
+
+# Mac
+.DS_Store
+
+# Streamlit
+.streamlit/
