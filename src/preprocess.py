@@ -61,43 +61,48 @@ def split_data(df):
     return X_train, Y_train, X_test, Y_test
 
 def encode_features(X_train, X_test):
-
+    
     encoder = ColumnTransformer(
-        transformers= [
+        transformers=[
             (
-            'ordinal',
-            OrdinalEncoder(categories=ORDINAL_ORDERS, handle_unknown='use_encoded_value', unknown_value=-1),
-            ORDINAL_FEATURES 
-            ), 
+                'ordinal',
+                OrdinalEncoder(
+                    categories=ORDINAL_ORDERS,
+                    handle_unknown='use_encoded_value',
+                    unknown_value=-1
+                ),
+                ORDINAL_FEATURES
+            ),
             (
                 'onehot',
-                OneHotEncoder(handle_unknown='ignore', sparse_output=False),
+                OneHotEncoder(
+                    handle_unknown='ignore',
+                    sparse_output=False
+                ),
                 NOMINAL_FEATURES
+            ),
+            (
+                'numerical',
+                'passthrough',
+                NUMERICAL_FEATURES
             )
-        ], 
-        remainder='passthrough'
+        ],
+        remainder='drop'    # ← changed from 'passthrough' to 'drop'
     )
-    #  Fit on train, transform both 
+    
     X_train_encoded = encoder.fit_transform(X_train)
     X_test_encoded  = encoder.transform(X_test)
     
     print(f"\nShape before encoding: {X_train.shape}")
     print(f"Shape after encoding:  {X_train_encoded.shape}")
     
-    #  Get feature names 
+    
     onehot_names  = encoder.named_transformers_['onehot']\
                            .get_feature_names_out(NOMINAL_FEATURES)
     feature_names = ORDINAL_FEATURES + list(onehot_names) + NUMERICAL_FEATURES
     
-    #  Convert back to DataFrames
-    X_train_enc = pd.DataFrame(
-        X_train_encoded,
-        columns=feature_names
-    )
-    X_test_enc = pd.DataFrame(
-        X_test_encoded,
-        columns=feature_names
-    )
+    X_train_enc = pd.DataFrame(X_train_encoded, columns=feature_names)
+    X_test_enc  = pd.DataFrame(X_test_encoded,  columns=feature_names)
     
     print(f"\nFinal feature names ({len(feature_names)}):")
     print(feature_names)
