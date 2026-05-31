@@ -5,7 +5,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import pandas as pd
 import numpy as np
 import joblib
-
+from config import PROCESSED_PATH, DATA_PATH
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -22,13 +22,48 @@ from config import (
 )
 
 def load_model_and_encoder():
-    
+    from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
+    from sklearn.compose import ColumnTransformer
+    from config import ORDINAL_FEATURES, ORDINAL_ORDERS, NOMINAL_FEATURES
+
     rf_model = joblib.load(MODELS_PATH / "random_forest.pkl")
-    encoder  = joblib.load(MODELS_PATH / "encoder.pkl")
-    
+
     print(f"Model loaded:   {type(rf_model).__name__}")
-    print(f"Encoder loaded: {type(encoder).__name__}")
+
+    # Rebuild encoder from scratch — avoids pkl version issues
+    encoder = ColumnTransformer(
+        transformers=[
+            (
+                'ordinal',
+                OrdinalEncoder(
+                    categories=ORDINAL_ORDERS,
+                    handle_unknown='use_encoded_value',
+                    unknown_value=-1
+                ),
+                ORDINAL_FEATURES
+            ),
+            (
+                'onehot',
+                OneHotEncoder(
+                    handle_unknown='ignore',
+                    sparse_output=False
+                ),
+                NOMINAL_FEATURES
+            )
+        ],
+        remainder='passthrough'
+    )
+
+    # Fit on the processed training data
+    train_df = pd.read_csv(PROCESSED_PATH / "train.csv")
     
+    # Get original unencoded columns from raw data
+    raw_df = pd.read_csv(DATA_PATH)
+    from config import CATEGORICAL_FEATURES, NUMERICAL_FEATURES, TARGET
+    X_raw = raw_df[ORDINAL_FEATURES + NOMINAL_FEATURES + NUMERICAL_FEATURES]
+    encoder.fit(X_raw)
+
+    print(f"Encoder rebuilt and fitted.")
     return rf_model, encoder
 
 
@@ -93,3 +128,8 @@ if __name__ == "__main__":
     print(f"\nPrediction:      {result['label']}")
     print(f"Bad Risk Prob:   {result['bad_risk_prob']}")
     print(f"Good Risk Prob:  {result['good_risk_prob']}")
+
+
+
+
+
