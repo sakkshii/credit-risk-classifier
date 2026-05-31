@@ -8,7 +8,7 @@ __pycache__/
 data/
 
 # Models
-models/
+# models/
 
 # Mac
 .DS_Store
